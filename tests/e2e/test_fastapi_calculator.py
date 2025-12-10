@@ -318,3 +318,95 @@ def test_model_division():
     with pytest.raises(ValueError):
         calc_zero = Calculation.create("division", dummy_user_id, [100, 0])
         calc_zero.get_result()
+
+# ---------------------------------------------------------------------------
+# Negative Tests - Authentication Failures
+# ---------------------------------------------------------------------------
+# REMOVED: test_invalid_login_credentials - redundant with integration tests:
+# - test_login_json_invalid_credentials in test_main.py
+# - test_login_form_invalid_credentials in test_main.py
+
+def test_missing_authentication_token(base_url: str):
+    """Test that calculations endpoint requires authentication."""
+    url = f"{base_url}/calculations"
+    
+    # Test without Authorization header
+    payload = {"type": "addition", "inputs": [1, 2]}
+    response = requests.post(url, json=payload)
+    assert response.status_code == 401, f"Expected 401 without token, got {response.status_code}"
+    
+    # Test with malformed token
+    headers = {"Authorization": "Bearer invalid_token_format"}
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code == 401, f"Expected 401 with invalid token, got {response.status_code}"
+
+def test_expired_or_invalid_token_access(base_url: str):
+    """Test that invalid/expired tokens are rejected."""
+    url = f"{base_url}/calculations"
+    payload = {"type": "addition", "inputs": [1, 2]}
+    
+    # Test with completely invalid token
+    invalid_headers = {"Authorization": "Bearer completely.invalid.token"}
+    response = requests.post(url, json=payload, headers=invalid_headers)
+    assert response.status_code == 401, f"Expected 401 with invalid token, got {response.status_code}"
+    
+    # Test with malformed Bearer format
+    malformed_headers = {"Authorization": "InvalidFormat token_here"}
+    response = requests.post(url, json=payload, headers=malformed_headers)
+    assert response.status_code == 401, f"Expected 401 with malformed auth header, got {response.status_code}"
+
+# ---------------------------------------------------------------------------
+# Negative Tests - Input Validation Failures
+# ---------------------------------------------------------------------------
+# REMOVED: test_calculation_missing_required_fields - redundant with integration tests:
+# - test_calculation_create_missing_type in test_calculation_schema.py
+# - test_calculation_create_missing_inputs in test_calculation_schema.py
+
+def test_calculation_invalid_operation_type(base_url: str):
+    """Test calculation creation with invalid operation types."""
+    user_data = {
+        "first_name": "Test",
+        "last_name": "Invalid",
+        "email": f"test.invalid{uuid4()}@example.com",
+        "username": f"testinv{str(uuid4())[:8]}",
+        "password": "SecurePass123!",
+        "confirm_password": "SecurePass123!"
+    }
+    token_data = register_and_login(base_url, user_data)
+    headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+    url = f"{base_url}/calculations"
+    
+    invalid_types = ["invalid_operation", "modulus", "power", "", None, 123]
+    
+    for invalid_type in invalid_types:
+        payload = {"type": invalid_type, "inputs": [1, 2]}
+        response = requests.post(url, json=payload, headers=headers)
+        assert response.status_code in [400, 422], f"Expected 400/422 for invalid type '{invalid_type}', got {response.status_code}"
+
+# REMOVED: test_calculation_invalid_inputs_validation - redundant with integration tests:
+# - test_calculation_create_invalid_inputs in test_calculation_schema.py
+# - test_calculation_update_invalid_input_type in test_calculation_schema.py
+
+def test_division_by_zero_api_validation(base_url: str):
+    """Test that division by zero is properly handled at the API level."""
+    user_data = {
+        "first_name": "Test",
+        "last_name": "Division",
+        "email": f"test.division{uuid4()}@example.com",
+        "username": f"testdiv{str(uuid4())[:8]}",
+        "password": "SecurePass123!",
+        "confirm_password": "SecurePass123!"
+    }
+    token_data = register_and_login(base_url, user_data)
+    headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+    url = f"{base_url}/calculations"
+    
+    # Test division by zero
+    payload = {"type": "division", "inputs": [10, 0]}
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code in [400, 422], f"Expected 400/422 for division by zero, got {response.status_code}"
+    
+    # Test division with zero in middle of inputs
+    payload = {"type": "division", "inputs": [100, 5, 0]}
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code in [400, 422], f"Expected 400/422 for division by zero (middle), got {response.status_code}"
