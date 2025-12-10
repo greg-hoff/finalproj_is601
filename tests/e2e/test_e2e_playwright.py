@@ -17,13 +17,15 @@ def test_homepage_loads(page, fastapi_server):
     # Check that the page title is correct (matches template block title)
     assert "Home" in page.title()
     
-    # Check that the welcome message is displayed
-    welcome_text = page.locator('h2:has-text("Welcome to the Calculations App")')
+    # Check that the welcome message is displayed (it's an h1, not h2)
+    welcome_text = page.locator('h1:has-text("Welcome to the Calculations App")')
     assert welcome_text.is_visible()
     
-    # Check that login/register instructions are shown
-    instructions = page.locator('p:has-text("Please login or register")')
-    assert instructions.is_visible()
+    # Check that login/register links are shown
+    login_link = page.locator('a:has-text("Login")')
+    register_link = page.locator('a:has-text("Register")')
+    assert login_link.is_visible()
+    assert register_link.is_visible()
 
 @pytest.mark.e2e
 def test_login_validation_error_handling(page, fastapi_server):
