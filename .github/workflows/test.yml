@@ -23,12 +23,22 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v3
       
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.12'
           
       - uses: actions/cache@v3
         with:
@@ -40,27 +50,40 @@ jobs:
       - name: Install dependencies
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/mytestdb
+          REDIS_URL: redis://localhost:6379
         run: |
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install  # if you use Playwright for e2e tests
+          playwright install --with-deps  # Install Playwright with dependencies
+          mkdir -p test-results  # Create directory for test results
       
       - name: Run tests
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/mytestdb
+          REDIS_URL: redis://localhost:6379
         run: |
           source venv/bin/activate
           
-          # 1) Unit tests
-          pytest tests/unit/ --cov=src --junitxml=test-results/junit.xml
-          
-          # 2) Integration tests
-          pytest tests/integration/
-          
-          # 3) E2E or other tests
-          pytest tests/e2e/
+          # Run all tests together (sync JWT tests eliminated asyncio conflicts)
+          echo "🧪 Running all tests with coverage..."
+          pytest --cov=app --cov-report=term-missing --cov-report=html --junitxml=test-results/junit.xml
+          echo "✅ All tests completed successfully!"
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: test-results/junit.xml
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-reports
+          path: htmlcov/
 
   security:
     needs: test
