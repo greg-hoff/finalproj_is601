@@ -203,6 +203,53 @@ def test_divide(a: Number, b: Number, expected: float) -> None:
     # Assert that the result of divide(a, b) matches the expected value
     assert result == expected, f"Expected divide({a}, {b}) to be {expected}, but got {result}"
 
+# ---------------------------------------------
+# Unit Tests for the 'modulus' Function
+# ---------------------------------------------
+@pytest.mark.parametrize(
+    "a, b, expected",
+    [
+        (10, 3, 1),           # Test modulus of two positive integers
+        (10.5, 3.0, 1.5),     # Test modulus of a positive float and a positive integer
+        (-10, 3, 2),          # Test modulus of a negative integer and a positive integer
+        (10, -3, -2),         # Test modulus of a positive integer and a negative integer
+    ],
+    ids=[
+        "modulus_two_positive_integers",
+        "modulus_positive_float_and_positive_integer",
+        "modulus_negative_integer_and_positive_integer",
+        "modulus_positive_integer_and_negative_integer",
+    ]
+)
+def test_modulus(a: Number, b: Number, expected: Number) -> None:
+    """
+    Test the 'modulus' function with various combinations of integers and floats.
+
+    This parameterized test verifies that the 'modulus' function correctly computes the modulus
+    of the first number by the second, handling both positive and negative values, as well as
+    integers and floats. Parameterization enables efficient testing of multiple scenarios.
+
+    Parameters:
+    - a (Number): The dividend.
+    - b (Number): The divisor.
+    - expected (Number): The expected result of the modulus operation.
+
+    Steps:
+    1. Call the 'modulus' function with arguments 'a' and 'b'.
+    2. Assert that the result is equal to 'expected'.
+
+    Example:
+    >>> test_modulus(10, 3, 1)
+    >>> test_modulus(10.5, 3.0, 1.5)
+    """
+    from app.operations import modulus  # Import here to avoid circular imports if any
+
+    # Call the 'modulus' function with the provided arguments
+    result = modulus(a, b)
+    
+    # Assert that the result of modulus(a, b) matches the expected value
+    assert result == expected, f"Expected modulus({a}, {b}) to be {expected}, but got {result}"
+
 
 # ---------------------------------------------
 # Negative Test Case: Division by Zero
@@ -232,3 +279,30 @@ def test_divide_by_zero() -> None:
     # Assert that the exception message contains the expected error message
     assert "Cannot divide by zero!" in str(excinfo.value), \
         f"Expected error message 'Cannot divide by zero!', but got '{excinfo.value}'"
+
+def test_modulus_by_zero() -> None:
+    """
+    Test the 'modulus' function with modulus by zero.
+
+    This negative test case verifies that attempting to perform modulus by zero raises a ValueError
+    with the appropriate error message. It ensures that the application correctly handles
+    invalid operations and provides meaningful feedback to the user.
+
+    Steps:
+    1. Attempt to call the 'modulus' function with arguments 10 and 0, which should raise a ValueError.
+    2. Use pytest's 'raises' context manager to catch the expected exception.
+    3. Assert that the error message contains "Cannot perform modulus by zero!".
+
+    Example:
+    >>> test_modulus_by_zero()
+    """
+    from app.operations import modulus  # Import here to avoid circular imports if any
+
+    # Use pytest's context manager to check for a ValueError when performing modulus by zero
+    with pytest.raises(ValueError) as excinfo:
+        # Attempt to perform modulus 10 % 0, which should raise a ValueError
+        modulus(10, 0)
+    
+    # Assert that the exception message contains the expected error message
+    assert "Cannot perform modulus by zero!" in str(excinfo.value), \
+        f"Expected error message 'Cannot perform modulus by zero!', but got '{excinfo.value}'"
