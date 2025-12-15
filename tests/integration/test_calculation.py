@@ -7,6 +7,7 @@ from app.models.calculation import (
     Subtraction,
     Multiplication,
     Division,
+    Modulus,
 )
 
 # Helper function to create a dummy user_id for testing.
@@ -59,6 +60,25 @@ def test_division_by_zero():
     division = Division(user_id=dummy_user_id(), inputs=inputs)
     with pytest.raises(ValueError, match="Cannot divide by zero."):
         division.get_result()
+
+def test_modulus_get_result():
+    """
+    Test that Modulus.get_result returns the correct modulus.
+    """
+    inputs = [10, 3, 2]
+    modulus = Modulus(user_id=dummy_user_id(), inputs=inputs)
+    # Expected: 10 % 3 % 2 = 1
+    result = modulus.get_result()
+    assert result == 1, f"Expected 1, got {result}"
+
+def test_modulus_by_zero():
+    """
+    Test that Modulus.get_result raises ValueError when modulus by zero.
+    """
+    inputs = [10, 0, 2]
+    modulus = Modulus(user_id=dummy_user_id(), inputs=inputs)
+    with pytest.raises(ValueError, match="Cannot perform modulus by zero."):
+        modulus.get_result()
 
 def test_calculation_factory_addition():
     """
@@ -116,13 +136,27 @@ def test_calculation_factory_division():
     assert isinstance(calc, Division), "Factory did not return a Division instance."
     assert calc.get_result() == 10, "Incorrect division result."
 
+def test_calculation_factory_modulus():
+    """
+    Test the Calculation.create factory method for modulus.
+    """
+    inputs = [10, 3, 2]
+    calc = Calculation.create(
+        calculation_type='modulus',
+        user_id=dummy_user_id(),
+        inputs=inputs,
+    )
+    # Expected: 10 % 3 % 2 = 1
+    assert isinstance(calc, Modulus), "Factory did not return a Modulus instance."
+    assert calc.get_result() == 1, "Incorrect modulus result."
+
 def test_calculation_factory_invalid_type():
     """
     Test that Calculation.create raises a ValueError for an unsupported calculation type.
     """
     with pytest.raises(ValueError, match="Unsupported calculation type"):
         Calculation.create(
-            calculation_type='modulus',  # unsupported type
+            calculation_type='root',  # unsupported type
             user_id=dummy_user_id(),
             inputs=[10, 3],
         )
@@ -150,3 +184,11 @@ def test_invalid_inputs_for_division():
     division = Division(user_id=dummy_user_id(), inputs=[10])
     with pytest.raises(ValueError, match="Inputs must be a list with at least two numbers."):
         division.get_result()
+
+def test_invalid_inputs_for_modulus():
+    """
+    Test that providing fewer than two numbers to Modulus.get_result raises a ValueError.
+    """
+    modulus = Modulus(user_id=dummy_user_id(), inputs=[10])
+    with pytest.raises(ValueError, match="Inputs must be a list with at least two numbers."):
+        modulus.get_result()
