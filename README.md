@@ -128,7 +128,7 @@ cd <repository-directory>
 
 ---
 
-# 🛠️ 4. Install Python 3.10+
+# 🛠️ 4. Install Python 3.12+
 
 ## Install Python
 
@@ -250,7 +250,7 @@ Then submit the GitHub repository link as instructed.
 
 - Install **Homebrew** first on Mac.
 - Install and configure **Git** and **SSH** before cloning.
-- Use **Python 3.10+** and **virtual environments** for Python projects.
+- Use **Python 3.12+** and **virtual environments** for Python projects.
 - **Docker** is optional depending on the project.
 
 ---

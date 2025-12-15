@@ -59,7 +59,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 This Dockerfile:
-1. Uses Python 3.10 slim image as the base
+1. Uses Python 3.12 slim image as the base
 2. Sets up the working directory
 3. Configures environment variables
 4. Installs system dependencies
@@ -253,7 +253,7 @@ Here's an example production Dockerfile:
 
 ```dockerfile
 # Dockerfile.prod
-FROM python:3.10-slim as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -268,7 +268,7 @@ COPY requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
 # Final stage
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
