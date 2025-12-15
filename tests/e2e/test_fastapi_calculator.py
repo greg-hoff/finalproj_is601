@@ -229,6 +229,30 @@ def test_create_calculation_division(base_url: str):
     # Expected result: 100 / 2 / 5 = 10
     assert "result" in data and data["result"] == 10, f"Expected result 10, got {data.get('result')}"
 
+def test_create_calculation_modulus(base_url: str):
+    user_data = {
+        "first_name": "Calc",
+        "last_name": "Modulus",
+        "email": f"calc.mod{uuid4()}@example.com",
+        "username": f"calc_mod_{uuid4()}",
+        "password": "SecurePass123!",
+        "confirm_password": "SecurePass123!"
+    }
+    token_data = register_and_login(base_url, user_data)
+    access_token = token_data["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"{base_url}/calculations"
+    payload = {
+        "type": "modulus",
+        "inputs": [10, 3, 2],
+        "user_id": "ignored"
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code == 201, f"Modulus calculation creation failed: {response.text}"
+    data = response.json()
+    # Expected result: 10 % 3 % 2 = 1
+    assert "result" in data and data["result"] == 1, f"Expected result 1, got {data.get('result')}"
+
 def test_list_get_update_delete_calculation(base_url: str):
     user_data = {
         "first_name": "Calc",
@@ -318,6 +342,17 @@ def test_model_division():
     with pytest.raises(ValueError):
         calc_zero = Calculation.create("division", dummy_user_id, [100, 0])
         calc_zero.get_result()
+        
+def test_model_modulus():
+    dummy_user_id = uuid4()
+    calc = Calculation.create("modulus", dummy_user_id, [10, 3, 2])
+    result = calc.get_result()
+    assert result == 1, f"Modulus result incorrect: expected 1, got {result}"
+    
+    # Test modulus by zero error
+    with pytest.raises(ValueError, match="Cannot perform modulus by zero."):
+        calc_zero = Calculation.create("modulus", dummy_user_id, [10, 0])
+        calc_zero.get_result()
 
 # ---------------------------------------------------------------------------
 # Negative Tests - Authentication Failures
@@ -376,7 +411,7 @@ def test_calculation_invalid_operation_type(base_url: str):
     headers = {"Authorization": f"Bearer {token_data['access_token']}"}
     url = f"{base_url}/calculations"
     
-    invalid_types = ["invalid_operation", "modulus", "power", "", None, 123]
+    invalid_types = ["invalid_operation", "root", "power", "", None, 123]
     
     for invalid_type in invalid_types:
         payload = {"type": invalid_type, "inputs": [1, 2]}
@@ -410,3 +445,27 @@ def test_division_by_zero_api_validation(base_url: str):
     payload = {"type": "division", "inputs": [100, 5, 0]}
     response = requests.post(url, json=payload, headers=headers)
     assert response.status_code in [400, 422], f"Expected 400/422 for division by zero (middle), got {response.status_code}"
+
+def test_modulus_by_zero_api_validation(base_url: str):
+    """Test that modulus by zero is properly handled at the API level."""
+    user_data = {
+        "first_name": "Test",
+        "last_name": "Modulus",
+        "email": f"test.modulus{uuid4()}@example.com",
+        "username": f"testmod{str(uuid4())[:8]}",
+        "password": "SecurePass123!",
+        "confirm_password": "SecurePass123!"
+    }
+    token_data = register_and_login(base_url, user_data)
+    headers = {"Authorization": f"Bearer {token_data['access_token']}"}
+    url = f"{base_url}/calculations"
+    
+    # Test modulus by zero
+    payload = {"type": "modulus", "inputs": [10, 0]}
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code in [400, 422], f"Expected 400/422 for modulus by zero, got {response.status_code}"
+    
+    # Test modulus with zero in middle of inputs
+    payload = {"type": "modulus", "inputs": [10, 3, 0]}
+    response = requests.post(url, json=payload, headers=headers)
+    assert response.status_code in [400, 422], f"Expected 400/422 for modulus by zero (middle), got {response.status_code}"
