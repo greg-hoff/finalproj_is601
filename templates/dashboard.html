@@ -452,8 +452,29 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
         
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create calculation');
+        let errorMessage = 'Failed to create calculation';
+        try {
+          const errorData = await response.json();
+          console.log('Error data received:', errorData);
+          
+          // Handle different error response formats
+          if (errorData.detail) {
+            // FastAPI HTTPException format
+            errorMessage = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail);
+          } else if (Array.isArray(errorData) && errorData.length > 0) {
+            // Pydantic validation error array format
+            const firstError = errorData[0];
+            if (firstError.msg) {
+              // Extract the actual error message from Pydantic error
+              errorMessage = firstError.msg.replace('Value error, ', '');
+            }
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
       
       // Get the created calculation data

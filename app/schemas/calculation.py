@@ -117,7 +117,9 @@ class CalculationBase(BaseModel):
         This validator runs after the model is created and performs
         business logic validation:
         1. Ensures there are at least 2 numbers for any calculation
-        2. For division, ensures that no divisor is zero
+        
+        Note: Division/modulus by zero validation is handled at the model level
+        when the result is calculated, not at the schema level.
         
         Returns:
             CalculationBase: The validated model
@@ -127,10 +129,8 @@ class CalculationBase(BaseModel):
         """
         if len(self.inputs) < 2:
             raise ValueError("At least two numbers are required for calculation")
-        if self.type == CalculationType.DIVISION:
-            # Prevent division by zero (skip the first value as numerator)
-            if any(x == 0 for x in self.inputs[1:]):
-                raise ValueError("Cannot divide by zero")
+        # Division/modulus by zero validation removed from schema level
+        # This is now handled in the model's get_result() method
         return self
 
     model_config = ConfigDict(

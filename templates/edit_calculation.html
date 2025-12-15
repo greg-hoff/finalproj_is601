@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       case 'modulus':
         // Avoid modulus by zero
         if (inputs.some((value, index) => index > 0 && value === 0)) {
-          return 'Cannot divide by zero';
+          return 'Cannot perform modulus by zero';
         }
         result = inputs.reduce((a, b, i) => i === 0 ? a : a % b, inputs[0]);
         break;
@@ -470,6 +470,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       showError('Division by zero is not allowed.');
       return;
     }
+    
+    // Check for modulus by zero
+    if (calcTypeInput.value === 'modulus' && newInputs.some((value, index) => index > 0 && value === 0)) {
+      showError('Modulus by zero is not allowed.');
+      return;
+    }
 
     // Show loading state on button
     submitButton.disabled = true;
@@ -495,8 +501,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         // Try to parse any error message from the API
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to update calculation');
+        let errorMessage = 'Failed to update calculation';
+        try {
+          const errorData = await response.json();
+          console.log('Error data received:', errorData);
+          
+          // Handle different error response formats
+          if (errorData.detail) {
+            // FastAPI HTTPException format
+            errorMessage = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail);
+          } else if (Array.isArray(errorData) && errorData.length > 0) {
+            // Pydantic validation error array format
+            const firstError = errorData[0];
+            if (firstError.msg) {
+              // Extract the actual error message from Pydantic error
+              errorMessage = firstError.msg.replace('Value error, ', '');
+            }
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } catch (parseError) {
+          console.log('Could not parse error response:', parseError);
+          // Try to get the response text if JSON parsing fails
+          try {
+            const responseText = await response.text();
+            console.log('Raw response text:', responseText);
+            errorMessage = responseText || errorMessage;
+          } catch (textError) {
+            console.log('Could not get response text:', textError);
+          }
+        }
+        throw new Error(errorMessage);
       }
       
       // Get the updated calculation
