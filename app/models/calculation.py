@@ -178,6 +178,7 @@ class AbstractCalculation:
             'subtraction': Subtraction,
             'multiplication': Multiplication,
             'division': Division,
+            'modulus': Modulus,  # Add new mapping
         }
         calculation_class = calculation_classes.get(calculation_type.lower())
         if not calculation_class:
@@ -353,4 +354,43 @@ class Division(Calculation):
             if value == 0:
                 raise ValueError("Cannot divide by zero.")
             result /= value
+        return result
+
+class Modulus(Calculation):
+    """
+    Modulus calculation subclass.
+    
+    Implements sequential modulus starting from the first number.
+    Examples:
+        [10, 3, 2] -> 10 % 3 % 2 = 1
+        [100, 7, 3] -> 100 % 7 % 3 = 1
+        
+    Special case handling:
+        - Modulus by zero raises a ValueError
+    """
+    __mapper_args__ = {"polymorphic_identity": "modulus"}
+
+    def get_result(self) -> float:
+        """
+        Calculate the result of performing modulus operations sequentially.
+        
+        Takes the first number and performs modulus by all remaining numbers sequentially.
+        Includes validation to prevent modulus by zero.
+        
+        Returns:
+            float: The result of the modulus sequence
+            
+        Raises:
+            ValueError: If inputs are not a list, if fewer than 2 numbers provided,
+                        or if attempting to perform modulus by zero
+        """
+        if not isinstance(self.inputs, list):
+            raise ValueError("Inputs must be a list of numbers.")
+        if len(self.inputs) < 2:
+            raise ValueError("Inputs must be a list with at least two numbers.")
+        result = self.inputs[0]
+        for value in self.inputs[1:]:
+            if value == 0:
+                raise ValueError("Cannot perform modulus by zero.")
+            result %= value
         return result

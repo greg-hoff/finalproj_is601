@@ -118,3 +118,9 @@ def divide(a: Number, b: Number) -> float:
     # Perform division of a by b and return the result as a float
     result = a / b
     return result
+
+def modulus(a: Number, b: Number) -> float:
+    """Perform modulus operation."""
+    if b == 0:
+        raise ValueError("Cannot perform modulus by zero!")
+    return a % b
